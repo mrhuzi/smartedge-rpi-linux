@@ -175,6 +175,28 @@ ln -sf /usr/share/zoneinfo/Asia/Shanghai "$ROOT/etc/localtime"
 echo "Asia/Shanghai" > "$ROOT/etc/timezone"
 echo "timezone set to Asia/Shanghai, stale timesyncd clock dropped"
 
+# 7f: sweep the stock kernels' Debian-style boot files from the ROOTFS /boot.
+# 7b scrubbed their dpkg records and step 7 deleted their /lib/modules, but the
+# stock image also leaves vmlinuz-*/System.map-*/config-*/initrd.img-* (both the
+# rpi-v8 and rpi-2712 variants) in the rootfs /boot. They are inert for the GPU
+# firmware (it only reads the FAT partition) yet update-initramfs -u scans them
+# on EVERY initramfs-tools upgrade and hard-fails on the missing module dirs -
+# seen on hardware 2026-10-19: "depmod: FATAL: could not search modules:
+# /lib/modules/6.18.50+rpt-rpi-v8" aborted a plain apt upgrade. Our kernel
+# ships only kernel8.img on the FAT partition, so no versioned boot file may
+# exist anywhere. Never matches kernel8.img / kernel*.img (no version suffix).
+GHOST_BOOT=$(find "$ROOT/boot" "$BOOT" -maxdepth 1 -type f \
+    \( -name 'vmlinuz-*' -o -name 'System.map-*' -o -name 'config-*' \
+       -o -name 'initrd.img-*' -o -name 'initramfs-*' \) 2>/dev/null || true)
+if [ -n "$GHOST_BOOT" ]; then
+    echo "$GHOST_BOOT" | while read -r f; do
+        rm -f "$f"
+        echo "removed ghost boot file: $f"
+    done
+else
+    echo "no ghost stock-kernel boot files present"
+fi
+
 echo "== 8. rootfs: ATtiny watchdog feeder =="
 install -m 755 "$REPO_ROOT/image/attiny-wdt-feed.sh" "$ROOT/usr/local/bin/attiny-wdt-feed.sh"
 install -m 644 "$REPO_ROOT/image/attiny-wdt-feed.service" "$ROOT/etc/systemd/system/attiny-wdt-feed.service"
@@ -282,6 +304,12 @@ if [ -d "$ROOT/var/log/journal" ] && [ -n "$(ls -A "$ROOT/var/log/journal" 2>/de
 fi
 grep -q "Asia/Shanghai" "$ROOT/etc/timezone" || fail "timezone not Asia/Shanghai"
 [ -e "$ROOT/var/lib/systemd/timesync/clock" ] && fail "stale timesyncd clock still present" || true
+# No versioned stock-kernel boot file may survive in either the rootfs /boot or
+# the FAT partition: update-initramfs -u hard-fails on them (2026-10-19).
+GHOST_CHECK=$(find "$ROOT/boot" "$BOOT" -maxdepth 1 -type f \
+    \( -name 'vmlinuz-*' -o -name 'System.map-*' -o -name 'config-*' \
+       -o -name 'initrd.img-*' -o -name 'initramfs-*' \) 2>/dev/null || true)
+[ -z "$GHOST_CHECK" ] || fail "ghost stock-kernel boot files present: $GHOST_CHECK"
 echo "ALL SANITY CHECKS PASSED"
 
 echo "== 12. detach image =="
