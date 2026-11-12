@@ -2286,7 +2286,7 @@ static void phase1_sync_claimed(struct hevc_d_dev *const dev, void *v)
  * phase1 has counted enables so must reenable once claimed
  * phase2 has unlimited enables
  */
-static void irq_sync(struct hevc_d_dev *const dev)
+void hevc_d_h265_sync(struct hevc_d_dev *dev)
 {
 	struct irq_sync sync;
 
@@ -2322,7 +2322,7 @@ void hevc_d_h265_stop(struct hevc_d_ctx *ctx)
 {
 	struct hevc_d_dev *const dev = ctx->dev;
 
-	irq_sync(dev);
+	hevc_d_h265_sync(dev);
 	h265_ctx_uninit(dev, ctx);
 }
 
@@ -2366,7 +2366,7 @@ int hevc_d_h265_start(struct hevc_d_ctx *ctx)
 				DMA_ATTR_NO_KERNEL_MAPPING)) {
 			v4l2_err(&dev->v4l2_dev,
 				 "Failed to alloc %#zx Coeff%d buffer\n",
-				 pu_size, i);
+				 coeff_size, i);
 			goto fail;
 		}
 	}

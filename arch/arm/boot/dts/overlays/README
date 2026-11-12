@@ -1561,6 +1561,15 @@ Params: speed                   Display SPI bus speed
         debug                   Debug output level {0-7}
 
 
+Name:   geekworm-x120x
+Info:   Geekworm X120x UPS boards for the Raspberry Pi 5, such as the X1202
+        and X1206. Adds the MAX17040-compatible fuel gauge at I2C address
+        0x36 and a gpio-charger for the GPIO that reports input power, and
+        links the two so the battery can report whether it is charging.
+Load:   dtoverlay=geekworm-x120x,<param>=<val>
+Params: gpio                    GPIO that reports input power (default 6)
+
+
 Name:   ghost-amp
 Info:   An overlay for the Ghost amplifier.
 Load:   dtoverlay=ghost-amp,<param>=<val>
@@ -5103,6 +5112,18 @@ Params: <None>
 Name:   smi-nand
 Info:   Enables access to NAND flash via the SMI interface
 Load:   dtoverlay=smi-nand
+Params: <None>
+
+
+Name:   spdif-gpio21
+Info:   Sound card that drives an S/PDIF transmitter (TOSLINK module or coaxial
+        driver) directly from GPIO21 (PCM_DOUT, 40-pin header pin 40), without
+        a transceiver chip. The I2S block is the bit and frame clock producer
+        and sends 2 x 32-bit slots per frame; userspace has to supply the
+        biphase-mark coded S/PDIF line signal as S32_LE at twice the audio
+        sample rate (e.g. through an ALSA plugin) - plain PCM does not produce
+        audio. Only GPIO21 is claimed, GPIOs 18-20 stay free.
+Load:   dtoverlay=spdif-gpio21
 Params: <None>
 
 
